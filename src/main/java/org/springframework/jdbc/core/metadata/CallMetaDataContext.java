@@ -445,12 +445,7 @@ public class CallMetaDataContext {
      *         from the input
      */
     public Map<String, Object> matchInParameterValuesWithCallParameters(SqlParameterSource parameterSource) {
-        // added by herong on 20140401
-        Long key = (long) (this.catalogName + "." + this.procedureName + "in").hashCode();
-        Object o = cacheMeta.get(key);
-        if (o != null) {
-            return (Map<String, Object>) o;
-        }
+        
 
         // For parameter source lookups we need to provide case-insensitive
         // lookup support
@@ -464,10 +459,28 @@ public class CallMetaDataContext {
         for (SqlParameter parameter : this.callParameters) {
             if (parameter.isInputValueProvided()) {
                 String parameterName = parameter.getName();
-                String parameterNameToMatch = this.metaDataProvider.parameterNameToUse(parameterName);
+                
+                
+                /*
+                 * Ô­£º
+                 * String parameterNameToMatch = this.metaDataProvider.parameterNameToUse(parameterName);
+                 */
+                
+                // added by herong on 20140401
+                String parameterNameToMatch = "";
+                Long key = (long) (this.catalogName + "." + this.procedureName + "in" + "_"+parameterName).hashCode();
+                Object o = cacheMeta.get(key);
+                if (o != null) {
+                	parameterNameToMatch =  (String) o;
+                } else {
+                	parameterNameToMatch = this.metaDataProvider.parameterNameToUse(parameterName);
+                	this.cacheMeta.put(key, parameterNameToMatch);
+                }
+                
                 if (parameterNameToMatch != null) {
                     callParameterNames.put(parameterNameToMatch.toLowerCase(), parameterName);
                 }
+                
                 if (parameterName != null) {
                     if (parameterSource.hasValue(parameterName)) {
                         matchedParameters.put(parameterName, SqlParameterSourceUtils.getTypedValue(parameterSource, parameterName));
@@ -504,8 +517,6 @@ public class CallMetaDataContext {
             logger.debug("Found match for " + matchedParameters.keySet());
         }
 
-        this.cacheMeta.put(key, matchedParameters);// added by herong on
-                                                   // 20140401
         return matchedParameters;
     }
 
